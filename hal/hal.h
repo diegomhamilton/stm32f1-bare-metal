@@ -2,7 +2,8 @@
 #define HAL_H
 
 #include "gpio.h"
-#include "uart.h"
+#include "adc.h"
+// #include "uart.h"
 
 #define hal_init() do { \
         gpio_init(); \

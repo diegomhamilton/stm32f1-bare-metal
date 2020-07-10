@@ -1,3 +1,6 @@
-C_SRC += GPIO/gpio.c 
-INCLUDE_DIRS += -I hal/**
-VPATH += hal
+C_SRC += $(BASE_DIR)/hal/GPIO/gpio.c
+INCLUDE_DIRS += -I $(BASE_DIR)/hal
+# INCLUDE_DIRS += -I $(BASE_DIR)/hal/UART
+INCLUDE_DIRS += -I $(BASE_DIR)/hal/ADC
+INCLUDE_DIRS += -I $(BASE_DIR)/hal/GPIO
+VPATH += $(BASE_DIR)/hal $(BASE_DIR)/hal/GPIO

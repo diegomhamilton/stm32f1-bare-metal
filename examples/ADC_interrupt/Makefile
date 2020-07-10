@@ -1,13 +1,14 @@
 TARGET = main
 
 BUILD_DIR = ./build
+BASE_DIR  = ../..
 
 .SECONDEXPANSION:
 .PRECIOUS: $(BUILD_DIR)/ $(BUILD_DIR)%/
 
 # Define the linker script location and chip architecture.
 #LD_SCRIPT = stm32.ld
-LD_SCRIPT = board/stm32f103xb.ld
+LD_SCRIPT = $(BASE_DIR)/board/stm32f103xb.ld
 #STARTUP_CODE = board/startup_stm32f103xb.s
 MCU_SPEC  = cortex-m3
 
@@ -52,9 +53,9 @@ STARTUP_SRC	= startup_stm32f103xb.s
 C_SRC    	= user_init.c
 APP_SRC    	= main.c
 
-include board/Makefile
-include os/Makefile
-include hal/Makefile
+include $(BASE_DIR)/board/Makefile
+include $(BASE_DIR)/os/Makefile
+include $(BASE_DIR)/hal/Makefile
 
 OBJS = $(BUILD_DIR)/$(STARTUP_SRC:.s=.o)
 OBJS += $(addprefix $(BUILD_DIR)/, $(notdir $(C_SRC:.c=.o)))
@@ -63,13 +64,13 @@ OBJS += $(BUILD_DIR)/$(APP_SRC:.c=.o)
 .PHONY: all, list
 all: $(BUILD_DIR)/$(TARGET).bin
 
-list: $(C_SRC) $(APP_SRC) board/$(STARTUP_SRC)
+list: $(C_SRC) $(APP_SRC) $(STARTUP_SRC)
 	$(CC) -g -Wa,-adhln $(CFLAGS) $(INCLUDE_DIRS) $^ > $(BUILD_DIR)/$(TARGET).lst
 
-$(BUILD_DIR)/%.o: board/%.s | $$(@D)/
+$(BUILD_DIR)/%.o: $(BASE_DIR)/board/%.s | $$(@D)/
 	$(CC) -x assembler-with-cpp $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: board/%.S | $$(@D)/
+$(BUILD_DIR)/%.o: $(BASE_DIR)/board/%.S | $$(@D)/
 	$(CC) -x assembler-with-cpp $(ASFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o: %.c | $$(@D)/
