@@ -29,7 +29,7 @@
             GPIOA->CRL &= ~(_GPIO_CRL_CNF(n)) & ~(_GPIO_CRL_MODE(n)); \
         } else if (n <= 9) {    \
             RCC->APB2ENR |= RCC_APB2ENR_IOPBEN; \
-            GPIOB->CRL &= ~(_GPIO_CRH_CNF(n-8)) & ~(_GPIO_CRL_MODE(n-8)); \
+            GPIOB->CRL &= ~(_GPIO_CRL_CNF(n-8)) & ~(_GPIO_CRL_MODE(n-8)); \
         } else if (n <= 15) {   \
             RCC->APB2ENR |= RCC_APB2ENR_IOPCEN; \
             GPIOC->CRL &= ~(_GPIO_CRL_CNF(n-10)) & ~(_GPIO_CRL_MODE(n-10)); \
