@@ -36,6 +36,7 @@ int main(void) {
 			 0,  /* Parity flag */
 			 0,  /* Over_sampling flag */
 			 0,  /* Hw flow control (CTS, RTS) flag */
+			 UART_BUFFER_SIZE/2, /* Threshold to call the rx callback */
 			 echo_cb,  /* rx_complete cb */
 			 0,  /* tx_complete cb */
 			 0   /* error cb */

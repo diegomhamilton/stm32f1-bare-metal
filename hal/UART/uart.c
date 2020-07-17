@@ -56,6 +56,8 @@ void uart_start(uart_t* drv, uart_config_t* config) {
     uint16_t cr1;
 
     drv->config = config;
+    drv->rx_threshold = config->rx_threshold > UART_BUFFER_SIZE - 1 ?
+	UART_BUFFER_SIZE - 1 : config->rx_threshold;
     drv->rx_complete_cb = config->rx_complete_cb;
     drv->tx_complete_cb = config->tx_complete_cb;
     drv->error_cb = config->error_cb;

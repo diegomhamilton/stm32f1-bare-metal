@@ -32,6 +32,7 @@ typedef struct {
     uint32_t parity;
     uint32_t over_sampling;
     uint32_t hw_flow_ctl;
+    uint32_t rx_threshold;
 
     reactor_cb_t rx_complete_cb;
     reactor_cb_t tx_complete_cb;
