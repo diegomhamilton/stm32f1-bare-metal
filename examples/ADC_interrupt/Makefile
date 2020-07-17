@@ -53,9 +53,9 @@ STARTUP_SRC	= startup_stm32f103xb.s
 C_SRC    	= user_init.c
 APP_SRC    	= main.c
 
-include $(BASE_DIR)/board/Makefile
-include $(BASE_DIR)/os/Makefile
-include $(BASE_DIR)/hal/Makefile
+include $(BASE_DIR)/board/board.mk
+include $(BASE_DIR)/os/os.mk
+include $(BASE_DIR)/hal/hal.mk
 
 OBJS = $(BUILD_DIR)/$(STARTUP_SRC:.s=.o)
 OBJS += $(addprefix $(BUILD_DIR)/, $(notdir $(C_SRC:.c=.o)))
