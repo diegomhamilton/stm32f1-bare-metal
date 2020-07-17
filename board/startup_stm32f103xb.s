@@ -81,8 +81,8 @@ LoopFillZerobss:
     bl	user_init
 	/* Finish other initialization steps (interrupts, gpio, etc) */
     bl  system_init
-/* Call the application's entry point.*/
-  bl main
+        /* Call the application's entry point.*/
+    bl  main
 
 	/* If main ever returns, loop forever */
 forever:

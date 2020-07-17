@@ -21,7 +21,7 @@ SysTick_Handler(void)
         if(vt_non_rt_handler_array[i]) {
             if(--vt_non_rt_handler_array[i - VT_NON_RT_HANDLER_ARRAY_MAX])
                 continue;
-            add_reactor_handler(vt_non_rt_handler_array[i], 0);
+            reactor_add_handler(vt_non_rt_handler_array[i], 0);
             if(!vt_non_rt_handler_array[i + VT_NON_RT_HANDLER_ARRAY_MAX]) {
                 /* If the handler is a one-shot, kill it right
                    away */

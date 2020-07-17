@@ -2,11 +2,11 @@
 #define HAL_H
 
 #include "gpio.h"
-#include "adc.h"
-// #include "uart.h"
+#include "uart.h"
 
-#define hal_init() do { \
-        gpio_init(); \
+#define hal_init() do {				\
+        gpio_init();				\
+	uart_init();				\
     } while(0)
 
 #endif /* HAL_H */

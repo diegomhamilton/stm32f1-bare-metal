@@ -5,9 +5,14 @@
 #include "reactor.h"
 #include "virtual_timer.h"
 #include "hal.h"
+#include "rcc.h"
 
 void
 system_init(void) {
+    /* The power control registers are unlikely to be used but let's enable */
+    /* them anyway*/
+    RCC_PWR_CLK_ENABLE();
+
     /* Enable Prefetch buffer and set flash latency to 2 wait states */
     FLASH->ACR = FLASH_ACR_LATENCY_1 | FLASH_ACR_PRFTBE;
 

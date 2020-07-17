@@ -18,7 +18,7 @@ void vt_init(void) {
 
 void vt_deinit(void) __attribute ((weak));
 void vt_deinit(void) {
-    /* Some mumbo-jumbo to set timer */
+    /* Some mumbo-jumbo to stop timer */
 }
 
 

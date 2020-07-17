@@ -23,7 +23,8 @@
    is no protection against a concurrent pop call */
 #ifndef BUFFER_PUSH_FULL_ACTION
 #ifdef BUFFER_OVERWRITE_OLDEST_WHEN_FULL
-#define BUFFER_PUSH_FULL_ACTION(buf, c) do {	\
+#define BUFFER_PUSH_FULL_ACTION(buf, c, ret_val) do {			\
+	(ret_val) = 0;							\
 	(buf).data[(buf).head] = (c);					\
 	(buf).head = (buf).new_head;					\
 	(buf).tail++;							\
@@ -31,7 +32,7 @@
 	    (buf).tail = 0;						\
     } while (0)
 #else /* BUFFER_OVERWRITE_WHEN_FULL */
-#define BUFFER_PUSH_FULL_ACTION(buf, c) do {	\
+#define BUFFER_PUSH_FULL_ACTION(buf, c, ret_val) do {	\
     } while (0)
 #endif /* BUFFER_OVERWRITE_WHEN_FULL */
 #endif /*  BUFFER_PUSH_FULL_ACTION */
@@ -67,31 +68,37 @@
 #define buffer_occupancy(buf) (((buf).head >= (buf).tail ? 0 : buffer_size(buf)) \
 			      + (buf).head - (buf).tail)
 
+#define buffer_free_space(buf) buffer_size(buf) - 1 - buffer_occupancy(buf)
+
 #define is_buffer_empty(buf) ((buf).head == (buf).tail)
 
 #define is_buffer_full(buf) ((buf).head + 1 >= buffer_size(buf) ?	\
 			     (buf).tail == 0 : (buf).head + 1 == (buf).tail)
 
-#define buffer_generic_push(buf, c, full_action, pos_push_action) do {	\
+#define buffer_generic_push(buf, c, ret_val, full_action, pos_push_action) do { \
 	(buf).new_head = (buf).head + 1;				\
 	if ((buf).new_head >= buffer_size(buf))				\
 	    (buf).new_head = 0;						\
 	if ((buf).new_head != (buf).tail) {				\
 	    (buf).data[(buf).head] = (c);				\
 	    (buf).head = (buf).new_head;				\
-	    pos_push_action();						\
-	} else								\
-	    full_action(buf, c);					\
+	    (ret_val) = 0;						\
+	    pos_push_action(buf, c, ret_val);				\
+	} else {							\
+	    (ret_val) = -1;						\
+	    full_action(buf, c, ret_val);				\
+	}								\
     } while (0)
 
-#define buffer_push(buf, c) buffer_generic_push(buf, c, BUFFER_PUSH_FULL_ACTION, {})
+#define buffer_push(buf, c, ret_val) \
+    buffer_generic_push(buf, c, ret_val, BUFFER_PUSH_FULL_ACTION, {})
 
-#define buffer_generic_pop(buf, c, empty_action, pos_pop_ation) do {	\
+#define buffer_generic_pop(buf, c, empty_action, pos_pop_action) do {	\
 	if ((buf).head == (buf).tail) {					\
 	    empty_action(buf, c);					\
 	}								\
 	else {								\
-	    c = (buf).data[(buf).tail];					\
+	    (c) = (buf).data[(buf).tail];				\
 	    if (++((buf).tail) >= buffer_size(buf))			\
 		(buf).tail = 0;						\
 	    pos_pop_action(buf, c);					\
