@@ -10,7 +10,7 @@ MEMORY
      * Memory layout per fig. 11, page 34 of the
      * stm32f103x8/stm32f103xb datasheet, rev. 17, dated 21-aug-2015
      */
-    flash : org = 0x08000000, len = 64k
+    flash : org = 0x08005000, len = 128k - 0x5000
     ram : org = 0x20000000, len = 20k
 }
 
