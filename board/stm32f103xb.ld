@@ -11,7 +11,7 @@ MEMORY
      * stm32f103x8/stm32f103xb datasheet, rev. 17, dated 21-aug-2015
      */
     flash : org = 0x08005000, len = 128k - 0x5000
-    ram : org = 0x20000000, len = 20k
+    ram : org = 0x20000C00, len = 20k - 0xC00
 }
 
 SECTIONS
