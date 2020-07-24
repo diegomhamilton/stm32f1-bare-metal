@@ -6,7 +6,8 @@
 
 #define hal_init() do {				\
         gpio_init();				\
-	uart_init();				\
+	    uart_init();				\
+        adc_init();                 \
     } while(0)
 
 #endif /* HAL_H */

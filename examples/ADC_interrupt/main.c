@@ -1,43 +1,47 @@
 #include "stm32f103xb.h"
 #include "adc.h"
+#include "reactor.h"
+#include "virtual_timer.h"
 
-volatile uint8_t adc_conv_ready = 0;
-volatile uint16_t conversion_result = 0;
 
-void ADC1_2_IRQHandler(void) {
-	if (ADC_EVT_EOC) {
-		adc_conv_ready = 1;
-		conversion_result = adc_read();
+void adc_conv_callback(hcos_word_t arg) {
+	adc_t *drv = (adc_t *) arg;
+
+	if (drv->config->samples[0] < 1024) {
+		GPIOC->BSRR = GPIO_BSRR_BS13;
+	} else {
+		GPIOC->BRR = GPIO_BRR_BR13;
 	}
+}
+
+adc_group_t adc_group = {
+	.ch = {0, 1, 2, 3, 4, 0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0},
+	.len = 5
+};
+
+adc_sample_t conv_result[5] = {0, 0, 0, 0, 0};
+
+adc_config_t adc_config = {
+	.group = &adc_group,
+	.sr = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	.align = ADC_RIGHT,
+	.mode = SINGLE,
+	.trigger = 0,
+	.group_conv_cb = adc_conv_callback,
+	.samples = conv_result
+};
+
+timer_cb_t adc_start_conv_cb(void) {
+	adc_start(&ADC1D, &adc_config);
+	GPIOC->BSRR = GPIO_BSRR_BS13;
+
+	return 0;
 }
 
 int
 main(void) {
-	adc_init();
+	GPIOC->BRR = GPIO_BRR_BR13;
 
-	/* GPIO settings */
-	adc_set_gpio(4);
-	
-	/* Channel 0 Single Conversion */
-	ADC_CONV_SINGLE_MODE();
-	ADC_CONV_RIGHT_ALIGN();
-	// ADC1->SMPR2 &= ~(ADC_SMPR2_SMP0);					// Set 1.5 cycle of sample time (SMP0 = 000)
-	ADC_GRP_NUM_OF_CONV(1);
-	ADC_GRP_1ST_CONV_CHAN(4);
-
-	/* Enable EOC interrupt */
-	adc_enable_EOC_irq();
-	GPIOC->BSRR = GPIO_BSRR_BS13;
-
-	while(1) {
-		ADC1->CR2 |= ADC_CR2_ADON;
-		while(adc_conv_ready == 0);
-		adc_conv_ready = 0;
-
-		if (conversion_result > 2048) {
-			GPIOC->BRR = GPIO_BRR_BR13;
-		} else {
-			GPIOC->BSRR = GPIO_BSRR_BS13;
-		}
-	}
+	vt_add_non_rt_handler((timer_cb_t) adc_start_conv_cb, 250, 1);
+	reactor_start();
 }
