@@ -323,18 +323,22 @@ typedef struct
   * @brief DMA Controller
   */
 
+#define DMA_NBR_CHANNELS 7
+
 typedef struct
 {
   __IO uint32_t CCR;
   __IO uint32_t CNDTR;
   __IO uint32_t CPAR;
   __IO uint32_t CMAR;
+  __IO uint32_t reserved;
 } DMA_Channel_TypeDef;
 
 typedef struct
 {
   __IO uint32_t ISR;
   __IO uint32_t IFCR;
+  __IO DMA_Channel_TypeDef channels[DMA_NBR_CHANNELS];
 } DMA_TypeDef;
 
 
