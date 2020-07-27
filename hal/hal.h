@@ -4,11 +4,13 @@
 #include "gpio.h"
 #include "uart.h"
 #include "dma.h"
+#include "adc.h"
 
 #define hal_init() do {				\
         gpio_init();				\
 	uart_init();				\
 	dma_init();				\
+        adc_init();                 \
     } while(0)
 
 #endif /* HAL_H */
