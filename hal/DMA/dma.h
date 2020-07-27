@@ -5,6 +5,7 @@
 #include "stm32f103xb.h"
 #include "rcc.h"
 #include "reactor.h"
+#include "hcos_types_impl.h"
 
 
 /*
@@ -14,50 +15,51 @@
 
 
 /*
- * Constants for all DMA1 channels
+ * Constants for all DMA1 channels.  This is one less than given in
+ * the RM008 document since we assume a zero based channel id
  */
-#define DMA_ADC1_CHANNEL 1
+#define DMA_ADC1_CHANNEL 0
 
-#define DMA_SPI1_RX_CHANNEL 2
-#define DMA_SPI1_TX_CHANNEL 3
-#define DMA_SPI2_RX_CHANNEL 4
-#define DMA_SPI2_TX_CHANNEL 5
+#define DMA_SPI1_RX_CHANNEL 1
+#define DMA_SPI1_TX_CHANNEL 2
+#define DMA_SPI2_RX_CHANNEL 3
+#define DMA_SPI2_TX_CHANNEL 4
 
+#define DMA_UART3_TX_CHANNEL 1
 #define DMA_UART3_RX_CHANNEL 2
-#define DMA_UART3_TX_CHANNEL 3
+#define DMA_UART1_TX_CHANNEL 3
 #define DMA_UART1_RX_CHANNEL 4
-#define DMA_UART1_TX_CHANNEL 5
-#define DMA_UART2_RX_CHANNEL 6
-#define DMA_UART2_TX_CHANNEL 7
+#define DMA_UART2_RX_CHANNEL 5
+#define DMA_UART2_TX_CHANNEL 6
 
-#define DMA_I2C2_TX_CHANNEL 4
-#define DMA_I2C2_RX_CHANNEL 5
-#define DMA_I2C1_TX_CHANNEL 6
-#define DMA_I2C1_RX_CHANNEL 7
+#define DMA_I2C2_TX_CHANNEL 3
+#define DMA_I2C2_RX_CHANNEL 4
+#define DMA_I2C1_TX_CHANNEL 5
+#define DMA_I2C1_RX_CHANNEL 6
 
-#define DMA_TIM1_CH1_CHANNEL 2
-#define DMA_TIM1_CH4_CHANNEL 4
-#define DMA_TIM1_TRG_CHANNEL 4
-#define DMA_TIM1_COM_CHANNEL 4
-#define DMA_TIM1_UP_CHANNEL  5
-#define DMA_TIM1_CH3_CHANNEL 6
+#define DMA_TIM1_CH1_CHANNEL 1
+#define DMA_TIM1_CH4_CHANNEL 3
+#define DMA_TIM1_TRG_CHANNEL 3
+#define DMA_TIM1_COM_CHANNEL 3
+#define DMA_TIM1_UP_CHANNEL  4
+#define DMA_TIM1_CH3_CHANNEL 5
 
-#define DMA_TIM2_CH3_CHANNEL 1
-#define DMA_TIM2_UP_CHANNEL  2
-#define DMA_TIM2_CH1_CHANNEL 5
-#define DMA_TIM2_CH2_CHANNEL 7
-#define DMA_TIM2_CH4_CHANNEL 7
+#define DMA_TIM2_CH3_CHANNEL 0
+#define DMA_TIM2_UP_CHANNEL  1
+#define DMA_TIM2_CH1_CHANNEL 4
+#define DMA_TIM2_CH2_CHANNEL 6
+#define DMA_TIM2_CH4_CHANNEL 6
 
-#define DMA_TIM3_CH3_CHANNEL 2
-#define DMA_TIM3_CH4_CHANNEL 3
-#define DMA_TIM3_UP_CHANNEL  3
-#define DMA_TIM3_CH1_CHANNEL 6
-#define DMA_TIM3_TRG_CHANNEL 6
+#define DMA_TIM3_CH3_CHANNEL 1
+#define DMA_TIM3_CH4_CHANNEL 2
+#define DMA_TIM3_UP_CHANNEL  2
+#define DMA_TIM3_CH1_CHANNEL 5
+#define DMA_TIM3_TRG_CHANNEL 5
 
-#define DMA_TIM4_CH1_CHANNEL 1
-#define DMA_TIM4_CH2_CHANNEL 4
-#define DMA_TIM4_CH3_CHANNEL 5
-#define DMA_TIM4_UP_CHANNEL  7
+#define DMA_TIM4_CH1_CHANNEL 0
+#define DMA_TIM4_CH2_CHANNEL 3
+#define DMA_TIM4_CH3_CHANNEL 4
+#define DMA_TIM4_UP_CHANNEL  6
 
 
 /*
@@ -106,6 +108,12 @@ typedef struct dma_bind_config_struct {
     reactor_cb_t half_transfer_cb;
     reactor_cb_t full_transfer_cb;
     reactor_cb_t error_cb;
+    hcos_word_t half_transfer_args;
+    hcos_word_t full_transfer_args;
+    hcos_word_t error_args;
+    reactor_cb_t half_transfer_rt_cb;
+    reactor_cb_t full_transfer_rt_cb;
+    reactor_cb_t error_rt_cb;
 } dma_bind_config_t;
 
 typedef struct dma_driver_struct {
@@ -113,6 +121,12 @@ typedef struct dma_driver_struct {
     reactor_cb_t half_transfer_cb[DMA_NBR_CHANNELS];
     reactor_cb_t full_transfer_cb[DMA_NBR_CHANNELS];
     reactor_cb_t error_cb[DMA_NBR_CHANNELS];
+    hcos_word_t half_transfer_args[DMA_NBR_CHANNELS];
+    hcos_word_t full_transfer_args[DMA_NBR_CHANNELS];
+    hcos_word_t error_args[DMA_NBR_CHANNELS];
+    reactor_cb_t half_transfer_rt_cb[DMA_NBR_CHANNELS];
+    reactor_cb_t full_transfer_rt_cb[DMA_NBR_CHANNELS];
+    reactor_cb_t error_rt_cb[DMA_NBR_CHANNELS];
 } dma_driver_t;
 
 
@@ -129,6 +143,12 @@ extern dma_driver_t DMAD1;
 	(drv)->half_transfer_cb[channel] = (cfg).half_transfer_cb;	\
 	(drv)->full_transfer_cb[channel] = (cfg).full_transfer_cb;	\
 	(drv)->error_cb[channel] = (cfg).error_cb;			\
+	(drv)->half_transfer_args[channel] = (cfg).half_transfer_args;	\
+	(drv)->full_transfer_args[channel] = (cfg).full_transfer_args;	\
+	(drv)->error_args[channel] = (cfg).error_args;			\
+	(drv)->half_transfer_rt_cb[channel] = (cfg).half_transfer_rt_cb; \
+	(drv)->full_transfer_rt_cb[channel] = (cfg).full_transfer_rt_cb; \
+	(drv)->error_rt_cb[channel] = (cfg).error_rt_cb;		\
 									\
 	(drv)->dev->IFCR = (channel == 0 ? DMA_IFCR_CGIF1 :		\
 			    (channel == 1 ? DMA_IFCR_CGIF2 :		\
@@ -143,16 +163,18 @@ extern dma_driver_t DMAD1;
 	    (cfg).peripheral_size | (cfg).memory_size |			\
 	    (cfg).peripheral_increment | (cfg).memory_increment |	\
 	    (cfg).direction | (cfg).circular_mode | (cfg).priority |	\
-	    ((cfg).half_transfer_cb ? DMA_CCR_HTIE : 0) |		\
-	    ((cfg).full_transfer_cb ? DMA_CCR_TCIE : 0) |		\
-	    ((cfg).error_cb ? DMA_CCR_TEIE : 0);			\
+	    ((cfg).half_transfer_cb || (cfg).half_transfer_rt_cb ? DMA_CCR_HTIE : 0) | \
+	    ((cfg).full_transfer_cb || (cfg).full_transfer_rt_cb ? DMA_CCR_TCIE : 0) | \
+	    ((cfg).error_cb || (cfg).error_rt_cb ? DMA_CCR_TEIE : 0);	\
 	(drv)->dev->channels[channel].CPAR = (cfg).peripheral_address;	\
 	(drv)->dev->channels[channel].CMAR = (cfg).memory_address;	\
 	(drv)->dev->channels[channel].CNDTR = (cfg).nbr_bytes;		\
+	dma_enable(drv, channel);					\
     } while(0)
 
 #define is_busy(drv, channel) ((drv)->dev->channels[channel].CNDTR != 0)
-#define dma_enable(drv, channel) (drv)->dev->channels[channel].CCR |= DMA_CCR_EN
+#define dma_enable(drv, channel) ((drv)->dev->channels[channel].CCR |= DMA_CCR_EN)
+#define dma_disable(drv, channel) ((drv)->dev->channels[channel].CCR &= ~DMA_CCR_EN)
 
 /*
  * Functions definitions
@@ -168,7 +190,7 @@ void dma_memcpy_basic(dma_driver_t* drv, const uint8_t* src, uint8_t* dst,
 #define dma_memcpy(drv, src, dst, n, cb) dma_memcpy_basic(drv, src, dst, n, cb, 1)
 inline void dma_memset(dma_driver_t* drv, uint8_t* dst, uint8_t b, uint16_t n,
 		       reactor_cb_t cb) {
-    src = (((uint32_t) b) << 24) | (((uint32_t) b) << 16) |
+    uint32_t src = (((uint32_t) b) << 24) | (((uint32_t) b) << 16) |
 	(((uint32_t) b) << 8) | b;
     dma_memcpy_basic(drv, (uint8_t *) &src, dst, n, cb, 0);
 }
