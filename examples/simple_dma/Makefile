@@ -31,24 +31,23 @@ ASFLAGS += -Wall
 ASFLAGS += -fmessage-length=0
 
 # C compilation directives
-REQ_CFLAGS += -mcpu=$(MCU_SPEC)
-REQ_CFLAGS += -mthumb
-REQ_CFLAGS += -Wall
+CFLAGS += -mcpu=$(MCU_SPEC)
+CFLAGS += -mthumb
+CFLAGS += -Wall
 #CFLAGS += -g
 CFLAGS += -O3
-REQ_CFLAGS += --specs=nosys.specs
+CFLAGS += --specs=nosys.specs
 # (Set error messages to appear on a single line.)
-REQ_CFLAGS += -fmessage-length=0
+CFLAGS += -fmessage-length=0
 # (Set system to ignore semihosted junk)
-REQ_CFLAGS += --specs=nano.specs
-REQ_CFLAGS += -DUART_USE_DMA=1
+CFLAGS += --specs=nano.specs
 
 # Linker directives.
-REQ_LFLAGS += -nostdlib
+LFLAGS += -nostdlib
 #LFLAGS += -lgcc
-REQ_LFLAGS += -nostartfiles
+LFLAGS += -nostartfiles
 LFLAGS += --cref -Map $(BUILD_DIR)/$(TARGET).map
-REQ_LFLAGS += -T./$(LD_SCRIPT)
+LFLAGS += -T./$(LD_SCRIPT)
 
 STARTUP_SRC	= startup_stm32f103xb.s
 C_SRC    	= user_init.c
@@ -66,7 +65,7 @@ OBJS += $(BUILD_DIR)/$(APP_SRC:.c=.o)
 all: $(BUILD_DIR)/$(TARGET).bin
 
 list: $(C_SRC) $(APP_SRC) $(STARTUP_SRC)
-	$(CC) -g -Wa,-adhln $(INCLUDE_DIRS) $(REQ_CFLAGS) $$(CFLAGS) $$^ > $(BUILD_DIR)/$(TARGET).lst
+	$(CC) -g -Wa,-adhln $(CFLAGS) $(INCLUDE_DIRS) $^ > $(BUILD_DIR)/$(TARGET).lst
 
 $(BUILD_DIR)/%.o: $(BASE_DIR)/board/%.s | $$(@D)/
 	$(CC) -x assembler-with-cpp $(ASFLAGS) $< -o $@
@@ -75,10 +74,10 @@ $(BUILD_DIR)/%.o: $(BASE_DIR)/board/%.S | $$(@D)/
 	$(CC) -x assembler-with-cpp $(ASFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o: %.c | $$(@D)/
-	$(CC) -c $(INCLUDE_DIRS) $(REQ_CFLAGS) $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) $(INCLUDE_DIRS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJS)
-	$(LD) $^ $(REQ_LFLAGS) $(LFLAGS) -o $@
+	$(LD) $^ $(LFLAGS) -o $@
 
 $(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf
 	$(OC) -S -O binary $< $@

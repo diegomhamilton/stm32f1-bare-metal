@@ -9,12 +9,6 @@
 
 
 /*
- * TODO: For now, define the number of channels here
- */
-//#define DMA_NBR_CHANNELS 7
-
-
-/*
  * Constants for all DMA1 channels.  This is one less than given in
  * the RM008 document since we assume a zero based channel id
  */
@@ -114,6 +108,9 @@ typedef struct dma_bind_config_struct {
     reactor_cb_t half_transfer_rt_cb;
     reactor_cb_t full_transfer_rt_cb;
     reactor_cb_t error_rt_cb;
+    hcos_word_t half_transfer_rt_args;
+    hcos_word_t full_transfer_rt_args;
+    hcos_word_t error_rt_args;
 } dma_bind_config_t;
 
 typedef struct dma_driver_struct {
@@ -127,6 +124,9 @@ typedef struct dma_driver_struct {
     reactor_cb_t half_transfer_rt_cb[DMA_NBR_CHANNELS];
     reactor_cb_t full_transfer_rt_cb[DMA_NBR_CHANNELS];
     reactor_cb_t error_rt_cb[DMA_NBR_CHANNELS];
+    hcos_word_t half_transfer_rt_args[DMA_NBR_CHANNELS];
+    hcos_word_t full_transfer_rt_args[DMA_NBR_CHANNELS];
+    hcos_word_t error_rt_args[DMA_NBR_CHANNELS];
 } dma_driver_t;
 
 
@@ -149,14 +149,17 @@ extern dma_driver_t DMAD1;
 	(drv)->half_transfer_rt_cb[channel] = (cfg).half_transfer_rt_cb; \
 	(drv)->full_transfer_rt_cb[channel] = (cfg).full_transfer_rt_cb; \
 	(drv)->error_rt_cb[channel] = (cfg).error_rt_cb;		\
+	(drv)->half_transfer_rt_args[channel] = (cfg).half_transfer_rt_args; \
+	(drv)->full_transfer_rt_args[channel] = (cfg).full_transfer_rt_args; \
+	(drv)->error_rt_args[channel] = (cfg).error_rt_args;		\
 									\
-	(drv)->dev->IFCR = (channel == 0 ? DMA_IFCR_CGIF1 :		\
-			    (channel == 1 ? DMA_IFCR_CGIF2 :		\
-			     (channel == 2 ? DMA_IFCR_CGIF3 :		\
-			      (channel == 3 ? DMA_IFCR_CGIF4 :		\
-			       (channel == 4 ? DMA_IFCR_CGIF5 :		\
-				(channel == 5 ? DMA_IFCR_CGIF6 :	\
-				 (channel == 6 ? DMA_IFCR_CGIF7 : 0))))))); \
+	(drv)->dev->IFCR = ((channel) == 0 ? DMA_IFCR_CGIF1 :		\
+			    ((channel) == 1 ? DMA_IFCR_CGIF2 :		\
+			     ((channel) == 2 ? DMA_IFCR_CGIF3 :		\
+			      ((channel) == 3 ? DMA_IFCR_CGIF4 :	\
+			       ((channel) == 4 ? DMA_IFCR_CGIF5 :	\
+				((channel) == 5 ? DMA_IFCR_CGIF6 :	\
+				 ((channel) == 6 ? DMA_IFCR_CGIF7 : 0))))))); \
 									\
 	(drv)->dev->channels[channel].CCR =				\
 	    ((cfg).mem2mem_flag ? DMA_CCR_MEM2MEM : 0) |		\
@@ -169,10 +172,9 @@ extern dma_driver_t DMAD1;
 	(drv)->dev->channels[channel].CPAR = (cfg).peripheral_address;	\
 	(drv)->dev->channels[channel].CMAR = (cfg).memory_address;	\
 	(drv)->dev->channels[channel].CNDTR = (cfg).nbr_bytes;		\
-	dma_enable(drv, channel);					\
     } while(0)
 
-#define is_busy(drv, channel) ((drv)->dev->channels[channel].CNDTR != 0)
+#define dma_is_busy(drv, channel) ((drv)->dev->channels[channel].CNDTR != 0)
 #define dma_enable(drv, channel) ((drv)->dev->channels[channel].CCR |= DMA_CCR_EN)
 #define dma_disable(drv, channel) ((drv)->dev->channels[channel].CCR &= ~DMA_CCR_EN)
 
@@ -188,10 +190,10 @@ extern uint32_t src;
 void dma_memcpy_basic(dma_driver_t* drv, const uint8_t* src, uint8_t* dst,
 		      uint16_t n, reactor_cb_t cb, uint8_t pinc);
 #define dma_memcpy(drv, src, dst, n, cb) dma_memcpy_basic(drv, src, dst, n, cb, 1)
-inline void dma_memset(dma_driver_t* drv, uint8_t* dst, uint8_t b, uint16_t n,
+inline void dma_memset(dma_driver_t* drv, uint8_t *dst, uint8_t *b, uint16_t n,
 		       reactor_cb_t cb) {
-    uint32_t src = (((uint32_t) b) << 24) | (((uint32_t) b) << 16) |
-	(((uint32_t) b) << 8) | b;
+    uint32_t src = (((uint32_t) *b) << 24) | (((uint32_t) *b) << 16) |
+	(((uint32_t) *b) << 8) | *b;
     dma_memcpy_basic(drv, (uint8_t *) &src, dst, n, cb, 0);
 }
 

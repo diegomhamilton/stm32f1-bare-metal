@@ -23,6 +23,8 @@ void dma_init(void) {
 	    DMAD1.error_rt_cb[i] = 0;
 	DMAD1.half_transfer_args[i] = DMAD1.full_transfer_args[i] =
 	    DMAD1.error_args[i] = i;
+	DMAD1.half_transfer_rt_args[i] = DMAD1.full_transfer_rt_args[i] =
+	    DMAD1.error_rt_args[i] = i;
     }
 }
 
@@ -66,9 +68,7 @@ int dma_stop(dma_driver_t* drv) {
 }
 
 void default_error_cb(hcos_word_t arg) {
-    GPIOC->BSRR = 1 << 13;
 }
-	#include "uart.h"
 
 void dma_memcpy_basic(dma_driver_t* drv, const uint8_t* src, uint8_t* dst,
 		      uint16_t n, reactor_cb_t cb, uint8_t pinc) {
@@ -89,14 +89,20 @@ void dma_memcpy_basic(dma_driver_t* drv, const uint8_t* src, uint8_t* dst,
 			     .half_transfer_cb = 0,
 			     .full_transfer_cb = cb,
 			     .error_cb = default_error_cb,
+			     .half_transfer_args = 0,
+			     .full_transfer_args = 0,
+			     .error_args = 0,
 			     .half_transfer_rt_cb = 0,
 			     .full_transfer_rt_cb = 0,
 			     .error_rt_cb = 0,
+			     .half_transfer_rt_args = 0,
+			     .full_transfer_rt_args = 0,
+			     .error_rt_args = 0,
     };
 
     if (ctr) {
 	for (channel=0; channel<7; channel++)
-	    if (!is_busy(drv, channel))
+	    if (!dma_is_busy(drv, channel))
 		break;
 	if (channel < 7) {
 	    dma_bind(drv, channel, cfg);
@@ -123,21 +129,21 @@ void DMA1_Channel1_IRQHandler(void) {
     if (isr & DMA_ISR_TCIF1) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF1;
 	if (DMAD1.full_transfer_rt_cb[0])
-	    DMAD1.full_transfer_rt_cb[0](DMAD1.full_transfer_args[0]);
+	    DMAD1.full_transfer_rt_cb[0](DMAD1.full_transfer_rt_args[0]);
 	if (DMAD1.full_transfer_cb[0])
 	    reactor_add_handler(DMAD1.full_transfer_cb[0],
 				DMAD1.full_transfer_args[0]);
     } else if (isr & DMA_ISR_HTIF1) { /*  */
 	DMA1->IFCR = DMA_ISR_HTIF1;
 	if (DMAD1.half_transfer_rt_cb[0])
-	    DMAD1.half_transfer_rt_cb[0](DMAD1.half_transfer_args[0]);
+	    DMAD1.half_transfer_rt_cb[0](DMAD1.half_transfer_rt_args[0]);
 	if (DMAD1.half_transfer_cb[0])
 	    reactor_add_handler(DMAD1.half_transfer_cb[0],
 				DMAD1.half_transfer_args[0]);
     } else if (isr & DMA_ISR_TEIF1) { /*  */
 	DMA1->IFCR = DMA_ISR_TEIF1;
 	if (DMAD1.error_rt_cb[0])
-	    DMAD1.error_rt_cb[0](DMAD1.error_args[0]);
+	    DMAD1.error_rt_cb[0](DMAD1.error_rt_args[0]);
 	if (DMAD1.error_cb[0])
 	    reactor_add_handler(DMAD1.error_cb[0], DMAD1.error_args[0]);
     }
@@ -149,21 +155,21 @@ void DMA1_Channel2_IRQHandler(void) {
     if (isr & DMA_ISR_TCIF2) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF2;
 	if (DMAD1.full_transfer_rt_cb[1])
-	    DMAD1.full_transfer_rt_cb[1](DMAD1.full_transfer_args[1]);
+	    DMAD1.full_transfer_rt_cb[1](DMAD1.full_transfer_rt_args[1]);
 	if (DMAD1.full_transfer_cb[1])
 	    reactor_add_handler(DMAD1.full_transfer_cb[1],
 				DMAD1.full_transfer_args[1]);
     } else if (isr & DMA_ISR_HTIF2) { /*  */
 	DMA1->IFCR = DMA_ISR_HTIF2;
 	if (DMAD1.half_transfer_rt_cb[1])
-	    DMAD1.half_transfer_rt_cb[1](DMAD1.half_transfer_args[1]);
+	    DMAD1.half_transfer_rt_cb[1](DMAD1.half_transfer_rt_args[1]);
 	if (DMAD1.half_transfer_cb[1])
 	    reactor_add_handler(DMAD1.half_transfer_cb[1],
 				DMAD1.half_transfer_args[1]);
     } else if (isr & DMA_ISR_TEIF2) { /*  */
 	DMA1->IFCR = DMA_ISR_TEIF2;
 	if (DMAD1.error_rt_cb[1])
-	    DMAD1.error_rt_cb[1](DMAD1.error_args[1]);
+	    DMAD1.error_rt_cb[1](DMAD1.error_rt_args[1]);
 	if (DMAD1.error_cb[1])
 	    reactor_add_handler(DMAD1.error_cb[1], DMAD1.error_args[1]);
     }
@@ -175,21 +181,21 @@ void DMA1_Channel3_IRQHandler(void) {
     if (isr & DMA_ISR_TCIF3) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF3;
 	if (DMAD1.full_transfer_rt_cb[2])
-	    DMAD1.full_transfer_rt_cb[2](DMAD1.full_transfer_args[2]);
+	    DMAD1.full_transfer_rt_cb[2](DMAD1.full_transfer_rt_args[2]);
 	if (DMAD1.full_transfer_cb[2])
 	    reactor_add_handler(DMAD1.full_transfer_cb[2],
 				DMAD1.full_transfer_args[2]);
     } else if (isr & DMA_ISR_HTIF3) { /*  */
 	DMA1->IFCR = DMA_ISR_HTIF3;
 	if (DMAD1.half_transfer_rt_cb[2])
-	    DMAD1.half_transfer_rt_cb[2](DMAD1.half_transfer_args[2]);
+	    DMAD1.half_transfer_rt_cb[2](DMAD1.half_transfer_rt_args[2]);
 	if (DMAD1.half_transfer_cb[2])
 	    reactor_add_handler(DMAD1.half_transfer_cb[2],
 				DMAD1.half_transfer_args[2]);
     } else if (isr & DMA_ISR_TEIF3) { /*  */
 	DMA1->IFCR = DMA_ISR_TEIF3;
 	if (DMAD1.error_rt_cb[2])
-	    DMAD1.error_rt_cb[2](DMAD1.error_args[2]);
+	    DMAD1.error_rt_cb[2](DMAD1.error_rt_args[2]);
 	if (DMAD1.error_cb[2])
 	    reactor_add_handler(DMAD1.error_cb[2], DMAD1.error_args[2]);
     }
@@ -201,21 +207,21 @@ void DMA1_Channel4_IRQHandler(void) {
     if (isr & DMA_ISR_TCIF4) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF4;
 	if (DMAD1.full_transfer_rt_cb[3])
-	    DMAD1.full_transfer_rt_cb[3](DMAD1.full_transfer_args[3]);
+	    DMAD1.full_transfer_rt_cb[3](DMAD1.full_transfer_rt_args[3]);
 	if (DMAD1.full_transfer_cb[3])
 	    reactor_add_handler(DMAD1.full_transfer_cb[3],
 				DMAD1.full_transfer_args[3]);
     } else if (isr & DMA_ISR_HTIF4) { /*  */
 	DMA1->IFCR = DMA_ISR_HTIF4;
 	if (DMAD1.half_transfer_rt_cb[3])
-	    DMAD1.half_transfer_rt_cb[3](DMAD1.half_transfer_args[3]);
+	    DMAD1.half_transfer_rt_cb[3](DMAD1.half_transfer_rt_args[3]);
 	if (DMAD1.half_transfer_cb[3])
 	    reactor_add_handler(DMAD1.half_transfer_cb[3],
 				DMAD1.half_transfer_args[3]);
     } else if (isr & DMA_ISR_TEIF4) { /*  */
 	DMA1->IFCR = DMA_ISR_TEIF4;
 	if (DMAD1.error_rt_cb[3])
-	    DMAD1.error_rt_cb[3](DMAD1.error_args[3]);
+	    DMAD1.error_rt_cb[3](DMAD1.error_rt_args[3]);
 	if (DMAD1.error_cb[3])
 	    reactor_add_handler(DMAD1.error_cb[3], DMAD1.error_args[3]);
     }
@@ -227,21 +233,21 @@ void DMA1_Channel5_IRQHandler(void) {
     if (isr & DMA_ISR_TCIF5) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF5;
 	if (DMAD1.full_transfer_rt_cb[4])
-	    DMAD1.full_transfer_rt_cb[4](DMAD1.full_transfer_args[4]);
+	    DMAD1.full_transfer_rt_cb[4](DMAD1.full_transfer_rt_args[4]);
 	if (DMAD1.full_transfer_cb[4])
 	    reactor_add_handler(DMAD1.full_transfer_cb[4],
 				DMAD1.full_transfer_args[4]);
     } else if (isr & DMA_ISR_HTIF5) { /*  */
 	DMA1->IFCR = DMA_ISR_HTIF5;
 	if (DMAD1.half_transfer_rt_cb[4])
-	    DMAD1.half_transfer_rt_cb[4](DMAD1.half_transfer_args[4]);
+	    DMAD1.half_transfer_rt_cb[4](DMAD1.half_transfer_rt_args[4]);
 	if (DMAD1.half_transfer_cb[4])
 	    reactor_add_handler(DMAD1.half_transfer_cb[4],
 				DMAD1.half_transfer_args[4]);
     } else if (isr & DMA_ISR_TEIF5) { /*  */
 	DMA1->IFCR = DMA_ISR_TEIF5;
 	if (DMAD1.error_rt_cb[4])
-	    DMAD1.error_rt_cb[4](DMAD1.error_args[4]);
+	    DMAD1.error_rt_cb[4](DMAD1.error_rt_args[4]);
 	if (DMAD1.error_cb[4])
 	    reactor_add_handler(DMAD1.error_cb[4], DMAD1.error_args[4]);
     }
@@ -253,21 +259,21 @@ void DMA1_Channel6_IRQHandler(void) {
     if (isr & DMA_ISR_TCIF6) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF6;
 	if (DMAD1.full_transfer_rt_cb[5])
-	    DMAD1.full_transfer_rt_cb[5](DMAD1.full_transfer_args[5]);
+	    DMAD1.full_transfer_rt_cb[5](DMAD1.full_transfer_rt_args[5]);
 	if (DMAD1.full_transfer_cb[5])
 	    reactor_add_handler(DMAD1.full_transfer_cb[5],
 				DMAD1.full_transfer_args[5]);
     } else if (isr & DMA_ISR_HTIF6) { /*  */
 	DMA1->IFCR = DMA_ISR_HTIF6;
 	if (DMAD1.half_transfer_rt_cb[5])
-	    DMAD1.half_transfer_rt_cb[5](DMAD1.half_transfer_args[5]);
+	    DMAD1.half_transfer_rt_cb[5](DMAD1.half_transfer_rt_args[5]);
 	if (DMAD1.half_transfer_cb[5])
 	    reactor_add_handler(DMAD1.half_transfer_cb[5],
 				DMAD1.half_transfer_args[5]);
     } else if (isr & DMA_ISR_TEIF6) { /*  */
 	DMA1->IFCR = DMA_ISR_TEIF6;
 	if (DMAD1.error_rt_cb[5])
-	    DMAD1.error_rt_cb[5](DMAD1.error_args[5]);
+	    DMAD1.error_rt_cb[5](DMAD1.error_rt_args[5]);
 	if (DMAD1.error_cb[5])
 	    reactor_add_handler(DMAD1.error_cb[5], DMAD1.error_args[5]);
     }
@@ -279,21 +285,21 @@ void DMA1_Channel7_IRQHandler(void) {
     if (isr & DMA_ISR_TCIF7) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF7;
 	if (DMAD1.full_transfer_rt_cb[6])
-	    DMAD1.full_transfer_rt_cb[6](DMAD1.full_transfer_args[6]);
+	    DMAD1.full_transfer_rt_cb[6](DMAD1.full_transfer_rt_args[6]);
 	if (DMAD1.full_transfer_cb[6])
 	    reactor_add_handler(DMAD1.full_transfer_cb[6],
 				DMAD1.full_transfer_args[6]);
     } else if (isr & DMA_ISR_HTIF7) { /*  */
 	DMA1->IFCR = DMA_ISR_HTIF7;
 	if (DMAD1.half_transfer_rt_cb[6])
-	    DMAD1.half_transfer_rt_cb[6](DMAD1.half_transfer_args[6]);
+	    DMAD1.half_transfer_rt_cb[6](DMAD1.half_transfer_rt_args[6]);
 	if (DMAD1.half_transfer_cb[6])
 	    reactor_add_handler(DMAD1.half_transfer_cb[6],
 				DMAD1.half_transfer_args[6]);
     } else if (isr & DMA_ISR_TEIF7) { /*  */
 	DMA1->IFCR = DMA_ISR_TEIF7;
 	if (DMAD1.error_rt_cb[6])
-	    DMAD1.error_rt_cb[6](DMAD1.error_args[6]);
+	    DMAD1.error_rt_cb[6](DMAD1.error_rt_args[6]);
 	if (DMAD1.error_cb[6])
 	    reactor_add_handler(DMAD1.error_cb[6], DMAD1.error_args[6]);
     }

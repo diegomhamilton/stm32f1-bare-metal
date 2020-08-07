@@ -16,9 +16,9 @@
 #define UART_BUFFER_SIZE 64
 #endif /* UART_BUFFER_SIZE */
 
-#ifndef UART_USE_DMA
-#define UART_USE_DMA FALSE
-#elif UART_USE_DMA == TRUE
+#ifdef UART_USE_DMA
+#undef UART_USE_DMA
+#define UART_USE_DMA 1
 #define UART_DMA_PRIO DMA_PRIO_MEDIUM
 #endif /* UART_USE_DMA */
 
@@ -64,7 +64,7 @@ typedef struct {
     uint32_t last_error_code;
     uint32_t rx_threshold;
 
-#if UART_USE_DMA == TRUE
+#if UART_USE_DMA == 1
     uint8_t dma_rx_channel;
     uint8_t dma_tx_channel;
 #endif /* UART_USE_DMA */
@@ -97,12 +97,14 @@ uint16_t uart_getc(uart_t* drv);
 int uart_write(uart_t* drv, const uint8_t *buf, int n);
 int uart_read(uart_t* drv, uint8_t *buf, int n);
 
-#if UART_USE_DMA == TRUE
+#if UART_USE_DMA == 1
 int uart_write_dma(uart_t* drv, const uint8_t *buf, int n, reactor_cb_t write_dma_cb);
 int uart_read_dma(uart_t* drv, uint8_t *buf, int n, reactor_cb_t read_dma_cb);
 #endif /* UART_USE_DMA */
 
 #define uart_tx_free_space(drv) buffer_free_space((drv)->tx_buf)
 #define uart_rx_used_space(drv) buffer_occupancy((drv)->rx_buf)
+
+#define uart_is_busy_tx(drv) ((drv)->dev->CR1 & USART_CR1_TXEIE)
 
 #endif /* UART_H */

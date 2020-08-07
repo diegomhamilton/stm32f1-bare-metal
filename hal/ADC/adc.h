@@ -9,6 +9,13 @@
 #include "reactor.h"
 
 #define ADC_MAX_CH_IN_GROUP                     16
+#define NBR_ADC_CHANNELS 18
+
+#ifdef ADC_USE_DMA
+#undef ADC_USE_DMA
+#define ADC_USE_DMA 1
+#define ADC_DMA_PRIO DMA_PRIO_VERY_HIGH
+#endif /* ADC_USE_DMA */
 
 typedef enum {
     ADC_RIGHT = 0,
@@ -48,33 +55,42 @@ typedef uint8_t adc_config_trigger_t;
 typedef uint16_t adc_sample_t;
 
 typedef struct {
-    adc_group_t *group;                         /* ADC Group configuration */
-    adc_config_sr_t sr[18];                     /* Sample Rate of each channel */
-    adc_config_align_t align;                   /* Right or Left word alignment */
-    adc_config_mode_t mode;                     /* Continuous or Single mode */
-    adc_config_trigger_t trigger;               /* Set ADC Trigger mode */
+    adc_group_t *group;                      /* ADC Group configuration */
+    adc_config_sr_t sr[NBR_ADC_CHANNELS];    /* Sample Rate of each channel */
+    adc_config_align_t align;                /* Right or Left word alignment */
+    adc_config_mode_t mode;                  /* Continuous or Single mode */
+    adc_config_trigger_t trigger;            /* Set ADC Trigger mode */
 
-    adc_sample_t *samples;                      /* Storage of ADC readings.
-                                                 * Provide a buffer with a minimum size:
-                                                 *  sizeof(adc_sample_t) * (conversion group's length)
-                                                 */
-    reactor_cb_t group_conv_cb;                 /* End of Group conversion callback */
+    adc_sample_t *samples;                   /* Storage of ADC readings.
+                                              * Provide a buffer with a minimum size:
+                                              * sizeof(adc_sample_t) * (conversion group's length)
+                                              */
+    reactor_cb_t group_conv_cb;              /* End of Group conversion callback */
+    reactor_cb_t eoc_injected_cb;   /*  */
+    reactor_cb_t watchdog_cb;       /* TODO: callback for future implementation of watchdog */
+#if ADC_USE_DMA == 1
+    reactor_cb_t half_transfer_cb;
+    reactor_cb_t full_transfer_cb;
+#endif
 } adc_config_t;
 
 typedef struct {
-    ADC_TypeDef *dev;                           /* ADC device */
-    adc_config_t *config;                       /* ADC configuration */
+    ADC_TypeDef *dev;               /* ADC device */
+    adc_config_t *config;           /* ADC configuration */
+#if ADC_USE_DMA == 1
+    uint32_t dma_channel;           /* DMA channel for this ADC */
+#endif
 } adc_t;
 
-extern adc_t ADC1D;
+extern adc_t ADCD1;
 
-#if 1
 void adc_init(void);
-#endif
 void adc_config_group_pins(adc_group_t *group);
 void adc_config_sample_rates(adc_config_sr_t *sr);
 void adc_start(adc_t *drv, adc_config_t *config);
-void adc_stop(adc_t *drv);
+int adc_start_conversion(adc_t *drv, uint16_t* buf, uint16_t n);
+int adc_stop_conversion(adc_t *drv);
+int adc_stop(adc_t *drv);
 extern void ADC1_2_IRQHandler(void);
 
 /* General macros */

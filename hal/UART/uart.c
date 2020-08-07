@@ -43,7 +43,7 @@ void uart_init() {
     SD3.tx_complete_cb = 0;
     SD3.error_cb = 0;
 
-#if UART_USE_DMA == TRUE
+#if UART_USE_DMA == 1
     SD1.dma_rx_channel = DMA_UART1_RX_CHANNEL;
     SD1.dma_tx_channel = DMA_UART1_TX_CHANNEL;
 
@@ -78,7 +78,7 @@ void uart_start(uart_t* drv, uart_config_t* config) {
     buffer_reset(drv->tx_buf);
     buffer_reset(drv->rx_buf);
 
-#if UART_USE_DMA == TRUE
+#if UART_USE_DMA == 1
     dma_start(&DMAD1);
 #endif /* UART_USE_DMA */
 
@@ -96,7 +96,6 @@ void uart_start(uart_t* drv, uart_config_t* config) {
     /* TODO: Configure for parity, word length, and error detection */
     /* TODO: Support for Synchronous mode, half duplex mode and CTS
        and HW flow control */
-    /* TODO: Support for DMA */
     /* TODO: Support for LIN, IrDA and smartcard */
     drv->dev->CR1 = cr1;
     drv->dev->BRR = fck;
@@ -139,11 +138,11 @@ void uart_stop(uart_t* drv) {
 uint8_t uart_putc(uart_t* drv, uint8_t c) {
     uint8_t rv;
 
-    if (drv->dev->CR1 & USART_CR1_TXEIE)
+    if (uart_is_busy_tx(drv))
 	return -2;
 
-#if UART_USE_DMA == TRUE
-    if (is_busy(&DMAD1, drv->dma_tx_channel))
+#if UART_USE_DMA == 1
+    if (dma_is_busy(&DMAD1, drv->dma_tx_channel))
 	return -2;
 #endif
 
@@ -166,11 +165,11 @@ int uart_write(uart_t* drv, const uint8_t *msg, int n) {
     int ctr = 0;
     uint8_t rv = 0;
 
-    if (drv->dev->CR1 & USART_CR1_TXEIE)
+    if (uart_is_busy_tx(drv))
 	return 0;
 
-#if UART_USE_DMA == TRUE
-    if (is_busy(&DMAD1, drv->dma_tx_channel))
+#if UART_USE_DMA == 1
+    if (dma_is_busy(&DMAD1, drv->dma_tx_channel))
 	return 0;
 #endif
 
@@ -194,20 +193,16 @@ int uart_read(uart_t* drv, uint8_t *buf, int n) {
     return i;
 }
 
-#if UART_USE_DMA == TRUE
+#if UART_USE_DMA == 1
 void uart_write_dma_cb(hcos_word_t arg) {
     uart_t *drv = (uart_t *) arg;
 
-    dma_disable(&DMAD1, drv->dma_tx_channel);
     drv->dev->CR3 &= ~USART_CR3_DMAT;
 }
 
 int uart_write_dma(uart_t* drv, const uint8_t *buf, int n, reactor_cb_t write_end_cb) {
     /* First test if we are already transmitting, in which case we
        return an error */
-    if ((drv->dev->CR1 & USART_CR1_TXEIE) || is_busy(&DMAD1, drv->dma_tx_channel))
-	return 1;
-
     dma_bind_config_t cfg = {.peripheral_address = (uint32_t) &drv->dev->DR,
 			     .memory_address  = (uint32_t) buf,
 			     .nbr_bytes       = n,
@@ -228,7 +223,13 @@ int uart_write_dma(uart_t* drv, const uint8_t *buf, int n, reactor_cb_t write_en
 			     .half_transfer_rt_cb = 0,
 			     .full_transfer_rt_cb = uart_write_dma_cb,
 			     .error_rt_cb = 0,
+			     .half_transfer_rt_args = 0,
+			     .full_transfer_rt_args = (hcos_word_t) drv,
+			     .error_rt_args = 0,
     };
+
+    if (uart_is_busy_tx(drv) || dma_is_busy(&DMAD1, drv->dma_tx_channel))
+	return 1;
 
     dma_bind(&DMAD1, drv->dma_tx_channel, cfg);
     drv->dev->CR3 |= USART_CR3_DMAT;
@@ -243,7 +244,6 @@ void uart_read_dma_cb(hcos_word_t arg) {
 
     drv->dev->CR3 &= ~USART_CR3_DMAT;
     drv->dev->CR1 |= USART_CR1_RXNEIE;
-    dma_disable(&DMAD1, drv->dma_rx_channel);
 }
 
 int uart_read_dma(uart_t* drv, uint8_t *buf, int n, reactor_cb_t read_end_cb) {
@@ -267,9 +267,12 @@ int uart_read_dma(uart_t* drv, uint8_t *buf, int n, reactor_cb_t read_end_cb) {
 			     .half_transfer_rt_cb = 0,
 			     .full_transfer_rt_cb = uart_read_dma_cb,
 			     .error_rt_cb = 0,
+			     .half_transfer_rt_args = 0,
+			     .full_transfer_rt_args = (hcos_word_t) drv,
+			     .error_rt_args = 0,
     };
 
-    if (is_busy(&DMAD1, drv->dma_rx_channel))
+    if (dma_is_busy(&DMAD1, drv->dma_rx_channel))
 	return 1;
 
     drv->dev->CR1 &= ~USART_CR1_RXNEIE;

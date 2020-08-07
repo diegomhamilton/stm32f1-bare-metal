@@ -61,10 +61,9 @@ int main(void) {
     };
 
     vt_add_non_rt_handler(blink_cb, 250, 1);
-    /* vt_add_non_rt_handler(write_cb, 500, 1); */
+    vt_add_non_rt_handler(write_cb, 500, 1);
 
     uart_start(&SD1, &cfg);
-    write_cb();
     reactor_start();
 
     return 0;

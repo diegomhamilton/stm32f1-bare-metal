@@ -32,10 +32,11 @@ static uint8_t buf1[BUFSZ];
 static uint8_t buf2[BUFSZ];
 static const uint8_t msg1[] = "Test of memset worked!\n\r";
 static const uint8_t msg2[] = "Test of memset DID NOT worked!\n\r";
+static uint8_t b = 1;
 
 void test1b_cb(hcos_word_t arg);
 hcos_word_t test1a_cb(void) {
-    dma_memset(&DMAD1, buf1, 1, BUFSZ, test1b_cb);
+    dma_memset(&DMAD1, buf1, &b, BUFSZ, test1b_cb);
     /* dma_memcpy(&DMAD1, buf1, buf2, 12, test1b_cb); */
 
     return 0;
@@ -46,12 +47,14 @@ void test1b_cb(hcos_word_t arg) {
     int lim = BUFSZ;
 
     for (i=0; i<lim; i++)
-    	if (buf1[i] != 1)
+    	if (buf1[i] != b)
     	    break;
     if (i == lim)
     	uart_write(&SD1, msg1, sizeof(msg1)/sizeof(msg1[0]));
     else
 	uart_write(&SD1, msg2, sizeof(msg2)/sizeof(msg2[0]));
+
+    b = b + 1;
     vt_add_non_rt_handler(test1a_cb, 250, 0);
 }
 

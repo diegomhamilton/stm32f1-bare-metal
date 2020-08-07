@@ -41,7 +41,7 @@ REQ_CFLAGS += --specs=nosys.specs
 REQ_CFLAGS += -fmessage-length=0
 # (Set system to ignore semihosted junk)
 REQ_CFLAGS += --specs=nano.specs
-REQ_CFLAGS += -DUART_USE_DMA=1
+REQ_CFLAGS += -DUART_USE_DMA=1 -DADC_USE_DMA=1
 
 # Linker directives.
 REQ_LFLAGS += -nostdlib
@@ -49,6 +49,7 @@ REQ_LFLAGS += -nostdlib
 REQ_LFLAGS += -nostartfiles
 LFLAGS += --cref -Map $(BUILD_DIR)/$(TARGET).map
 REQ_LFLAGS += -T./$(LD_SCRIPT)
+REQ_LFLAGS += -L /usr/lib/gcc/arm-none-eabi/7.3.1/thumb/v7-m
 
 STARTUP_SRC	= startup_stm32f103xb.s
 C_SRC    	= user_init.c

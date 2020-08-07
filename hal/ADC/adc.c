@@ -3,25 +3,19 @@
 #include "adc.h"
 #include "rcc.h"
 #include "reactor.h"
+#include "dma.h"
 
-adc_t ADC1D;
+adc_t ADCD1;
 static adc_t *active_drv;
 
-#if 1
 void adc_init(void) {
-    ADC1D.dev = ADC1;
-    ADC1D.config = 0;
+    ADCD1.dev = ADC1;
+    ADCD1.config = 0;
 
-    RCC_ADC1_CLK_ENABLE();                      /* Enable ADC1 RCC */
-    ADC1->CR2 |= ADC_CR2_ADON;
-    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
-    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();   /* Wait two ADC clock cycles before starting calibration */
-    ADC1->CR2 |= ADC_CR2_CAL;                   /* Start calibration */
-    
-    while(ADC1->CR2 & ADC_CR2_CAL);             /* Wait for ADC1 calibration to finish */
-    adc_stop(&ADC1D);
+#if ADC_USE_DMA == 1
+    ADCD1.dma_channel = DMA_ADC1_CHANNEL;
+#endif /* ADC_USE_DMA */
 }
-#endif
 
 void adc_start(adc_t *drv, adc_config_t *config) {
     drv->config = config;
@@ -30,17 +24,89 @@ void adc_start(adc_t *drv, adc_config_t *config) {
     adc_config_sample_rates(drv->config->sr);
     
     (drv->config->align == ADC_RIGHT) ? ADC_CONV_RIGHT_ALIGN(ADC1) : ADC_CONV_LEFT_ALIGN(ADC1);
-    ADC_CONV_SINGLE_MODE(ADC1);     //TODO: add support to cont mode
     drv->config->trigger = 0;       //TODO: add support to trigger config
 
-    adc_enable_EOC_irq(ADC1);
+    RCC_ADC1_CLK_ENABLE();                      /* Enable ADC1 RCC */
     drv->dev->CR2 |= ADC_CR2_ADON;
-    active_drv = drv;
+    /* Wait two ADC clock cycles before starting calibration. Assumes
+       12 MHz ADC clock */
+    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
+    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
+
+    drv->dev->CR2 |= ADC_CR2_CAL;
+    while(drv->dev->CR2 & ADC_CR2_CAL)
+	;             /* Wait for ADC1 calibration to finish */
+
+    drv->dev->CR2 |= (config->mode == SINGLE ? 0 : ADC_CR2_CONT);
 }
 
-void adc_stop(adc_t *drv) {
-    // drv->dev->CR2 &= ~(ADC_CR2_ADON);   // Stop ADC
+#if ADC_USE_DMA == 1
+void adc_full_transfer_cb(hcos_word_t arg) {
+    
+}
+#endif
+
+int adc_start_conversion(adc_t* drv, uint16_t* buf, uint16_t n) {
+#if ADC_USE_DMA == 1
+    dma_bind_config_t config = {.peripheral_address = (uint32_t) &drv->dev->DR,
+			   .memory_address = (uint32_t) buf,
+			   .nbr_bytes = n,
+			   .mem2mem_flag = 0,
+			   .priority = DMA_PRIO_VERY_HIGH,
+			   .peripheral_size = DMA_PER_SIZE_16BITS,
+			   .memory_size = DMA_MEM_SIZE_16BITS,
+			   .peripheral_increment = DMA_NO_PER_INCREMENT_MODE,
+			   .memory_increment = DMA_MEM_INCREMENT_MODE,
+			   .direction = DMA_FROM_PER_MODE,
+			   .circular_mode = DMA_CIRCULAR_MODE,
+			   .half_transfer_cb = 0,
+			   .full_transfer_cb = 0,
+			   .error_cb = 0,
+			   .half_transfer_args = 0,
+			   .full_transfer_args = 0,
+			   .error_args = 0,
+			   .half_transfer_rt_cb = drv->config->half_transfer_cb,
+			   .full_transfer_rt_cb = drv->config->full_transfer_cb,
+			   .error_rt_cb = 0,
+			   .half_transfer_rt_args = (hcos_word_t) drv,
+			   .full_transfer_rt_args = (hcos_word_t) drv,
+			   .error_rt_args = 0,
+    };
+
+    if (!drv->config)
+	return -1;
+
+    dma_bind(&DMAD1, drv->dma_channel, config);
+    drv->dev->CR2 |= (ADC_CR2_DMA | ADC_CR2_CONT);
+    drv->dev->SMPR2 |= SR_239_5_CYCLES;  /* For now, fixed to channel 0 */
+    dma_enable(&DMAD1, drv->dma_channel);
+#else  /* ADC_USE_DMA == FALSE */
+    adc_enable_EOC_irq(ADC1);
+#endif  /* ADC_USE_DMA */
+
+    drv->dev->CR2 |= ADC_CR2_ADON;
+    active_drv = drv;
+
+    return 0;
+}
+
+int adc_stop_conversion(adc_t *drv) {
+    drv->dev->CR2 &= ~(ADC_CR2_CONT);   // Stop ADC
+    drv->dev->CR1 &= ~ADC_CR1_EOCIE;
+
+    /* TODO:  Check the best value to return */
+    /* return drv->dev->SR & ? 1 : 0; */
+    return 0;
+}
+
+int adc_stop(adc_t *drv) {
+    adc_stop_conversion(drv);
+    drv->dev->CR2 &= ~(ADC_CR2_ADON);   // Stop ADC
+    RCC_ADC1_CLK_DISABLE();             /* Enable ADC1 RCC */
     drv->config = 0;                    // Reset configs
+    active_drv = 0;
+
+    return 0;
 }
 
 void adc_config_group_pins(adc_group_t *group) {
@@ -118,7 +184,7 @@ void adc_config_sample_rates(adc_config_sr_t *sr) {
     */
 }
 
-#if 1
+#if 0
 void ADC1_2_IRQHandler(void) {
     static uint8_t conv_count = 0;
 
