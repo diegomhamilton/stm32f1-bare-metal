@@ -1,16 +1,17 @@
 #include "virtual_timer_priv.h"
 #include "virtual_timer.h"
 #include "reactor.h"
+#include "systime.h"
 
 
-static volatile uint32_t no_ticks = 0;
+volatile uint32_t systick_no_ticks = 0;
 
 void
 SysTick_Handler(void)
 {
     int i;
 
-    no_ticks++;
+    systick_no_ticks++;
 
     for(i=0; i<VT_RT_HANDLER_ARRAY_MAX; i++)
         if(vt_rt_handler_array[i])

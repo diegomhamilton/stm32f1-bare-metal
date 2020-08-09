@@ -38,6 +38,10 @@ void adc_start(adc_t *drv, adc_config_t *config) {
 	;             /* Wait for ADC1 calibration to finish */
 
     drv->dev->CR2 |= (config->mode == SINGLE ? 0 : ADC_CR2_CONT);
+
+#if ADC_USE_DMA == 1
+    dma_start(&DMAD1);
+#endif /* UART_USE_DMA */
 }
 
 #if ADC_USE_DMA == 1
@@ -49,35 +53,35 @@ void adc_full_transfer_cb(hcos_word_t arg) {
 int adc_start_conversion(adc_t* drv, uint16_t* buf, uint16_t n) {
 #if ADC_USE_DMA == 1
     dma_bind_config_t config = {.peripheral_address = (uint32_t) &drv->dev->DR,
-			   .memory_address = (uint32_t) buf,
-			   .nbr_bytes = n,
-			   .mem2mem_flag = 0,
-			   .priority = DMA_PRIO_VERY_HIGH,
-			   .peripheral_size = DMA_PER_SIZE_16BITS,
-			   .memory_size = DMA_MEM_SIZE_16BITS,
-			   .peripheral_increment = DMA_NO_PER_INCREMENT_MODE,
-			   .memory_increment = DMA_MEM_INCREMENT_MODE,
-			   .direction = DMA_FROM_PER_MODE,
-			   .circular_mode = DMA_CIRCULAR_MODE,
-			   .half_transfer_cb = 0,
-			   .full_transfer_cb = 0,
-			   .error_cb = 0,
-			   .half_transfer_args = 0,
-			   .full_transfer_args = 0,
-			   .error_args = 0,
-			   .half_transfer_rt_cb = drv->config->half_transfer_cb,
-			   .full_transfer_rt_cb = drv->config->full_transfer_cb,
-			   .error_rt_cb = 0,
-			   .half_transfer_rt_args = (hcos_word_t) drv,
-			   .full_transfer_rt_args = (hcos_word_t) drv,
-			   .error_rt_args = 0,
+				.memory_address = (uint32_t) buf,
+				.nbr_bytes = n,
+				.mem2mem_flag = 0,
+				.priority = DMA_PRIO_VERY_HIGH,
+				.peripheral_size = DMA_PER_SIZE_16BITS,
+				.memory_size = DMA_MEM_SIZE_16BITS,
+				.peripheral_increment = DMA_NO_PER_INCREMENT_MODE,
+				.memory_increment = DMA_MEM_INCREMENT_MODE,
+				.direction = DMA_FROM_PER_MODE,
+				.circular_mode = DMA_CIRCULAR_MODE,
+				.half_transfer_cb = drv->config->half_transfer_cb,
+				.full_transfer_cb = drv->config->full_transfer_cb,
+				.error_cb = 0,
+				.half_transfer_args = 0,
+				.full_transfer_args = 0,
+				.error_args = 0,
+				.half_transfer_rt_cb = 0,
+				.full_transfer_rt_cb = 0,
+				.error_rt_cb = 0,
+				.half_transfer_rt_args = (hcos_word_t) drv,
+				.full_transfer_rt_args = (hcos_word_t) drv,
+				.error_rt_args = 0,
     };
 
     if (!drv->config)
 	return -1;
 
     dma_bind(&DMAD1, drv->dma_channel, config);
-    drv->dev->CR2 |= (ADC_CR2_DMA | ADC_CR2_CONT);
+    drv->dev->CR2 |= ADC_CR2_DMA;
     drv->dev->SMPR2 |= SR_239_5_CYCLES;  /* For now, fixed to channel 0 */
     dma_enable(&DMAD1, drv->dma_channel);
 #else  /* ADC_USE_DMA == FALSE */

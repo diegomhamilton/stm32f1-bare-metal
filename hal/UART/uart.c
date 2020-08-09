@@ -138,9 +138,6 @@ void uart_stop(uart_t* drv) {
 uint8_t uart_putc(uart_t* drv, uint8_t c) {
     uint8_t rv;
 
-    if (uart_is_busy_tx(drv))
-	return -2;
-
 #if UART_USE_DMA == 1
     if (dma_is_busy(&DMAD1, drv->dma_tx_channel))
 	return -2;
@@ -164,9 +161,6 @@ uint32_t ll = 1 << 13;
 int uart_write(uart_t* drv, const uint8_t *msg, int n) {
     int ctr = 0;
     uint8_t rv = 0;
-
-    if (uart_is_busy_tx(drv))
-	return 0;
 
 #if UART_USE_DMA == 1
     if (dma_is_busy(&DMAD1, drv->dma_tx_channel))
