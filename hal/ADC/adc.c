@@ -48,6 +48,11 @@ void adc_start(adc_t *drv, adc_config_t *config) {
 void adc_full_transfer_cb(hcos_word_t arg) {
     
 }
+
+uint64_t time0;
+uint64_t time1;
+
+#include "systime.h"
 #endif
 
 int adc_start_conversion(adc_t* drv, uint16_t* buf, uint16_t n) {
@@ -83,6 +88,7 @@ int adc_start_conversion(adc_t* drv, uint16_t* buf, uint16_t n) {
     dma_bind(&DMAD1, drv->dma_channel, config);
     drv->dev->CR2 |= ADC_CR2_DMA;
     drv->dev->SMPR2 |= SR_239_5_CYCLES;  /* For now, fixed to channel 0 */
+    time0 = systime_get_time();
     dma_enable(&DMAD1, drv->dma_channel);
 #else  /* ADC_USE_DMA == FALSE */
     adc_enable_EOC_irq(ADC1);

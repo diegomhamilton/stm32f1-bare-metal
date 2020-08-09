@@ -41,7 +41,8 @@ REQ_CFLAGS += --specs=nosys.specs
 REQ_CFLAGS += -fmessage-length=0
 # (Set system to ignore semihosted junk)
 REQ_CFLAGS += --specs=nano.specs
-REQ_CFLAGS += -DUART_USE_DMA=1 -DADC_USE_DMA=1
+#REQ_CFLAGS += -DUART_USE_DMA=1 -DADC_USE_DMA=1
+REQ_CFLAGS += -DADC_USE_DMA=1
 
 # Linker directives.
 REQ_LFLAGS += -nostdlib

@@ -123,8 +123,15 @@ void dma_memcpy_basic(dma_driver_t* drv, const uint8_t* src, uint8_t* dst,
     }
 }
 
+extern uint64_t time0;
+extern uint64_t time1;
+
+#include "systime.h"
+
 void DMA1_Channel1_IRQHandler(void) {
     uint32_t isr = DMA1->ISR;
+
+    time1 = systime_get_time();
 
     if (isr & DMA_ISR_TCIF1) { /*  */
 	DMA1->IFCR = DMA_ISR_TCIF1;

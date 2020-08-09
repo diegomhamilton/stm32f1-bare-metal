@@ -7,6 +7,7 @@
 #include "dma.h"
 #include "adc.h"
 
+#include "systime.h"
 
 /*
  * Callback to blink the led to show the app is active
@@ -22,12 +23,25 @@ hcos_base_int_t blink_cb(void) {
 #define ADC_BUFFER_SIZE 1024
 uint16_t adc_buffer[ADC_BUFFER_SIZE];
 
+extern uint64_t time0;
+extern uint64_t time1;
+
 void full_transfer_cb(hcos_word_t arg) {
-    uart_write_dma(&SD1, (uint8_t *) &adc_buffer[ADC_BUFFER_SIZE/2], ADC_BUFFER_SIZE, 0);
+    uint32_t tmp = time1 - time0;
+    uint32_t syn1 = 0xFFFFFFFF;
+    uart_write(&SD1, (const uint8_t*) &tmp, sizeof(tmp));
+    uart_write(&SD1, (const uint8_t*) &syn1, sizeof(syn1));
+    time0 = time1;
+    /* uart_write_dma(&SD1, (uint8_t *) &adc_buffer[ADC_BUFFER_SIZE/2], ADC_BUFFER_SIZE, 0); */
 }
 
 void half_transfer_cb(hcos_word_t arg) {
-    uart_write_dma(&SD1, (uint8_t *) adc_buffer, ADC_BUFFER_SIZE, 0);
+    uint32_t tmp = time1 - time0;
+    uint32_t syn2 = 0xEEEEEEEE;
+    uart_write(&SD1, (const uint8_t*) &tmp, sizeof(tmp));
+    uart_write(&SD1, (const uint8_t*) &syn2, sizeof(syn2));
+    time0 = time1;
+    /* uart_write_dma(&SD1, (uint8_t *) adc_buffer, ADC_BUFFER_SIZE, 0); */
 }
 
 int main(void) {
@@ -66,7 +80,7 @@ int main(void) {
     /* TODO: For now, we set the pin mode here.  Do it in adc_start() */
     gpio_set_pin_mode(IOPORT1, 0, IN_ANALOG_MODE);
 
-    vt_add_non_rt_handler(blink_cb, 250, 1);
+    /* vt_add_non_rt_handler(blink_cb, 250, 1); */
 
     uart_start(&SD1, &uart_cfg);
     adc_start(&ADCD1, &adc_cfg);
