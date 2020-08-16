@@ -60,7 +60,6 @@ typedef struct {
     uart_buffer_t tx_buf;
     USART_TypeDef* dev;
     uart_pindata_t* pins;
-    uart_config_t* config;
     uint32_t last_error_code;
     uint32_t rx_threshold;
 

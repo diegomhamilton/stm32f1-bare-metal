@@ -18,7 +18,6 @@ uart_t SD3;
 void uart_init() {
     SD1.dev = USART1;
     SD1.pins = pin_cfgs;
-    SD1.config = 0;
     SD1.last_error_code = 0;
     SD1.rx_threshold = 0;
     SD1.rx_complete_cb = 0;
@@ -27,7 +26,6 @@ void uart_init() {
 
     SD2.dev = USART2;
     SD2.pins = pin_cfgs + 1;
-    SD2.config = 0;
     SD2.last_error_code = 0;
     SD2.rx_threshold = 0;
     SD2.rx_complete_cb = 0;
@@ -36,7 +34,6 @@ void uart_init() {
 
     SD3.dev = USART3;
     SD3.pins = pin_cfgs + 2;
-    SD3.config = 0;
     SD3.last_error_code = 0;
     SD3.rx_threshold = 0;
     SD3.rx_complete_cb = 0;
@@ -59,7 +56,6 @@ void uart_start(uart_t* drv, uart_config_t* config) {
     uint16_t cr1;
     uint32_t fck;
 
-    drv->config = config;
     drv->rx_threshold = config->rx_threshold > UART_BUFFER_SIZE - 1 ?
 	UART_BUFFER_SIZE - 1 : config->rx_threshold;
     drv->rx_complete_cb = config->rx_complete_cb;
