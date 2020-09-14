@@ -20,9 +20,6 @@ void adc_init(void) {
 void adc_start(adc_t *drv, adc_config_t *config) {
     drv->config = config;
 
-    adc_config_group_pins(drv->config->group);
-    adc_config_sample_rates(drv->config->sr);
-    
     (drv->config->align == ADC_RIGHT) ? ADC_CONV_RIGHT_ALIGN(ADC1) : ADC_CONV_LEFT_ALIGN(ADC1);
     drv->config->trigger = 0;       //TODO: add support to trigger config
 
@@ -37,6 +34,10 @@ void adc_start(adc_t *drv, adc_config_t *config) {
     while(drv->dev->CR2 & ADC_CR2_CAL)
 	;             /* Wait for ADC1 calibration to finish */
 
+    /* Configure group pins and conversion channels */
+    adc_config_group_pins(drv->config->group);
+    adc_config_sample_rates(drv->config->sr);
+    
     drv->dev->CR2 |= (config->mode == SINGLE ? 0 : ADC_CR2_CONT);
 
 #if ADC_USE_DMA == 1
@@ -82,7 +83,7 @@ int adc_start_conversion(adc_t* drv, uint16_t* buf, uint16_t n) {
 
     dma_bind(&DMAD1, drv->dma_channel, config);
     drv->dev->CR2 |= ADC_CR2_DMA;
-    drv->dev->SMPR2 |= SR_239_5_CYCLES;  /* For now, fixed to channel 0 */
+    drv->dev->SMPR2 |= (SR_239_5_CYCLES) | (SR_239_5_CYCLES << 3);  /* For now, fixed to channel 0 and 1 */
     dma_enable(&DMAD1, drv->dma_channel);
 #else  /* ADC_USE_DMA == FALSE */
     adc_enable_EOC_irq(ADC1);
