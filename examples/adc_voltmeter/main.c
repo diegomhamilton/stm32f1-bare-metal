@@ -26,11 +26,8 @@ reactor_cb_t voltage_to_display(void) {
 		gpio_set_pin(GPIOB, 3);
 		gpio_set_pin(GPIOB, 4);
 	}
-}
-
-hcos_base_int_t read_voltage_cb(void) {
-    
-    return 0;
+	
+	adc_start_conversion(&ADCD1, adc_buffer, ADC_BUFFER_SIZE);
 }
 
 static adc_group_t adc_groups_config = {.ch = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -55,10 +52,7 @@ int main(void) {
     /* Configure port B as output push-pull */
     gpio_set_port_mode(GPIOB, gpio_replicate_mode_for_port(generate_mode(OUT_GP_PUSHPULL, SPEED_50_MHZ)));
 
-    vt_add_non_rt_handler(read_voltage_cb, 100, 1);
-
     adc_start(&ADCD1, &adc_cfg);
-
     adc_start_conversion(&ADCD1, adc_buffer, ADC_BUFFER_SIZE);
 
     reactor_start();
