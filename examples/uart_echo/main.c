@@ -30,7 +30,7 @@ void echo_cb(hcos_word_t arg) {
 }
 
 int main(void) {
-    uart_config_t cfg = {.baudrate = 3000000,
+    uart_config_t cfg = {.baudrate = 500000,
 			 .word_length = 8,
 			 .stop_bits = 1,
 			 .parity = 0,

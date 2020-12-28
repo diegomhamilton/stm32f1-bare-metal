@@ -83,11 +83,22 @@ $(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf
 	$(OC) -S -O binary $< $@
 	$(OS) $<
 
+$(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
+	$(OC) -S -O ihex $< $@
+	$(OS) $<
+
 $(BUILD_DIR)/:
 	mkdir -p $@
 
 $(BUILD_DIR)%/:
 	mkdir -p $@
+
+.PHONY: flash, flash2
+flash: $(BUILD_DIR)/$(TARGET).hex
+	stm32flash -w $< /dev/ttyUSB0
+
+flash2: $(BUILD_DIR)/$(TARGET).hex
+	st-flash write $< 0x08000000
 
 .PHONY: clean
 clean:
