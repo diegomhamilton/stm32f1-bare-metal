@@ -61,10 +61,6 @@ typedef struct {
     adc_config_mode_t mode;                  /* Continuous or Single mode */
     adc_config_trigger_t trigger;            /* Set ADC Trigger mode */
 
-    adc_sample_t *samples;                   /* Storage of ADC readings.
-                                              * Provide a buffer with a minimum size:
-                                              * sizeof(adc_sample_t) * (conversion group's length)
-                                              */
     reactor_cb_t group_conv_cb;              /* End of Group conversion callback */
     reactor_cb_t eoc_injected_cb;   /*  */
     reactor_cb_t watchdog_cb;       /* TODO: callback for future implementation of watchdog */
@@ -76,8 +72,20 @@ typedef struct {
 
 typedef struct {
     ADC_TypeDef *dev;               /* ADC device */
-    adc_config_t *config;           /* ADC configuration */
+
+    adc_sample_t *samples;   /* Storage of ADC readings. Provide a
+                              * buffer with a minimum size:
+                              * sizeof(adc_sample_t) (conversion
+                              * group's length)
+                              */
+    int length;
+    reactor_cb_t group_conv_cb;              /* End of Group conversion callback */
+    reactor_cb_t eoc_injected_cb;   /*  */
+    reactor_cb_t watchdog_cb;       /* TODO: callback for future implementation of watchdog */
 #if ADC_USE_DMA == 1
+    reactor_cb_t half_transfer_cb;
+    reactor_cb_t full_transfer_cb;
+
     uint32_t dma_channel;           /* DMA channel for this ADC */
 #endif
 } adc_t;
@@ -85,9 +93,8 @@ typedef struct {
 extern adc_t ADCD1;
 
 void adc_init(void);
-void adc_config_group_pins(adc_group_t *group);
-void adc_config_sample_rates(adc_config_sr_t *sr);
-void adc_start(adc_t *drv, adc_config_t *config);
+void adc_config_sample_rate(adc_t *drv, int n, adc_config_sr_t sr);
+int adc_start(adc_t *drv, adc_config_t *config);
 int adc_start_conversion(adc_t *drv, uint16_t* buf, uint16_t n);
 int adc_stop_conversion(adc_t *drv);
 int adc_stop(adc_t *drv);
@@ -97,7 +104,7 @@ extern void ADC1_2_IRQHandler(void);
 #define _GPIO_CRL_CNF(n)        (unsigned long) (0x3UL << (2 + (n) * 4))
 #define _GPIO_CRL_MODE(n)       (unsigned long) (0x3UL << ((n) * 4))
 
-#define SET_REG_BITS_AT_MASK(REG, MASK, VAL, POS)   ( (REG) = (((REG) & ~(MASK)) | ((VAL) << (POS))) )
+#define SET_REG_BITS_AT_MASK(REG, MASK, VAL, POS)   ( (REG) = (((REG) & ~(MASK)) | (((VAL) << (POS)) & (MASK))) )
 
 /* Macro to Configure ADC pins */
 #define adc_set_gpio(n) \

@@ -32,6 +32,7 @@
   .thumb
 
 .global vectors
+.global memset
 .global Reset_Handler
 
 /**
@@ -90,6 +91,26 @@ forever:
 	b	forever
 
 .size Reset_Handler, . - Reset_Handler
+
+/**
+ * @brief A simple memset function for the compiler to use
+ *
+ * @param r0 - the pointer where the byte should go
+ * @param r1 - the value to write
+ * @param r2 - the number of bytes to write
+*/
+memset:
+        cbz     r2, .L2
+        mov     r3, r0
+        uxtb    r1, r1
+        add     r2, r2, r0
+.L1:
+        strb    r1, [r3], #1
+        cmp     r3, r2
+        bne     .L1
+.L2:
+        bx      lr
+
 
 /**
  * @brief  This is the code that gets called when the processor receives an

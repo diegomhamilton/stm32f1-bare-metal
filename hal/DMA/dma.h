@@ -90,7 +90,7 @@
 typedef struct dma_bind_config_struct {
     uint32_t peripheral_address;
     uint32_t memory_address;
-    uint32_t nbr_bytes;
+    uint32_t nbr_transfers;
     uint32_t mem2mem_flag;
     uint32_t priority;
     uint32_t peripheral_size;
@@ -171,7 +171,7 @@ extern dma_driver_t DMAD1;
 	    ((cfg).error_cb || (cfg).error_rt_cb ? DMA_CCR_TEIE : 0);	\
 	(drv)->dev->channels[channel].CPAR = (cfg).peripheral_address;	\
 	(drv)->dev->channels[channel].CMAR = (cfg).memory_address;	\
-	(drv)->dev->channels[channel].CNDTR = (cfg).nbr_bytes;		\
+	(drv)->dev->channels[channel].CNDTR = (cfg).nbr_transfers;		\
     } while(0)
 
 #define dma_is_busy(drv, channel) ((drv)->dev->channels[channel].CNDTR != 0)

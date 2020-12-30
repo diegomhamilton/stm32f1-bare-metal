@@ -195,7 +195,7 @@ int uart_write_dma(uart_t* drv, const uint8_t *buf, int n, reactor_cb_t write_en
        return an error */
     dma_bind_config_t cfg = {.peripheral_address = (uint32_t) &drv->dev->DR,
 			     .memory_address  = (uint32_t) buf,
-			     .nbr_bytes       = n,
+			     .nbr_transfers    = n,
 			     .mem2mem_flag    = 0,
 			     .priority        = UART_DMA_PRIO,
 			     .peripheral_size = DMA_PER_SIZE_8BITS,
@@ -239,7 +239,7 @@ void uart_read_dma_cb(hcos_word_t arg) {
 int uart_read_dma(uart_t* drv, uint8_t *buf, int n, reactor_cb_t read_end_cb) {
     dma_bind_config_t cfg = {.peripheral_address = (uint32_t) &drv->dev->DR,
 			     .memory_address  = (uint32_t) buf,
-			     .nbr_bytes       = n,
+			     .nbr_transfers   = n,
 			     .mem2mem_flag    = 0,
 			     .priority        = UART_DMA_PRIO,
 			     .peripheral_size = DMA_PER_SIZE_8BITS,

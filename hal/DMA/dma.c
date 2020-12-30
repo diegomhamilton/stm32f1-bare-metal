@@ -73,11 +73,12 @@ void default_error_cb(hcos_word_t arg) {
 void dma_memcpy_basic(dma_driver_t* drv, const uint8_t* src, uint8_t* dst,
 		      uint16_t n, reactor_cb_t cb, uint8_t pinc) {
     int n_orig = n;
-    int ctr = n >> 2;  /* Dividing by 4 */
+    int ctr = n >> 2;  /* Dividing by 4 since we'll transfer 4 bytes
+                          at a time */
     uint8_t channel;
     dma_bind_config_t cfg = {.peripheral_address = (uint32_t) src,
 			     .memory_address  = (uint32_t) dst,
-			     .nbr_bytes       = ctr,
+			     .nbr_transfers   = ctr,
 			     .mem2mem_flag    = DMA_MEM2MEM_MODE,
 			     .priority        = DMA_PRIO_LOW,
 			     .peripheral_size = DMA_PER_SIZE_32BITS,
