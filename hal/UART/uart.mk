@@ -1,0 +1,3 @@
+C_SRC += $(BASE_DIR)/hal/UART/uart.c
+INCLUDE_DIRS += -I $(BASE_DIR)/hal/UART
+VPATH += $(BASE_DIR)/hal/UART
